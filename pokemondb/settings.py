@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,14 +27,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-h)vtpu^*_ctzsz6l-ut7%hp@c=qx0brio4u3q)@(a=4#(mlvja'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+INTERNAL_IPS = ['127.0.0.1']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
+    'debug_toolbar',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,7 +50,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',  
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,24 +85,88 @@ WSGI_APPLICATION = 'pokemondb.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
-DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite')
+#Jazzmin custiom admin pannel
+JAZZMIN_SETTINGS = {
+    "site_title": "PokémonDB Admin",
+    "site_header": "PokémonDB",
+    "site_brand": "⚡ PokémonDB",
+    "welcome_sign": "Welcome to PokémonDB Admin",
+    "copyright": "PokémonDB",
+    "search_model": ["cards.Card", "cards.CardSet"],
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index"},
+        {"name": "View Site", "url": "/", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "icons": {
+        "cards.Card": "fas fa-id-card",
+        "cards.CardSet": "fas fa-layer-group",
+        "cards.Favorite": "fas fa-heart",
+        "auth.User": "fas fa-user",
+    },
+    "default_icon_parents": "fas fa-folder",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": True,
+    "custom_css": None,
+    "custom_js": None,
+    "show_ui_builder": False,
+}
 
-if DB_ENGINE == 'postgres':
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-danger",
+    "accent": "accent-danger",
+    "navbar": "navbar-white navbar-light",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-danger",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "default",
+    "button_classes": {
+        "primary": "btn-danger",
+        "secondary": "btn-outline-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
+    },
+}
+
+#Databse
+
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    }
+elif os.getenv('DB_ENGINE', 'sqlite') == 'sqlite':
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'pokemon_db'),
-            'USER': os.getenv('DB_USER', 'pokemon_user'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'pokemon123'),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'pokemon_db'),
+            'USER': os.getenv('DB_USER', 'pokemon_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
         }
     }
 
@@ -131,15 +202,23 @@ USE_I18N = True
 USE_TZ = False
 
 
+#Railway Variables
+SUPERUSER_NAME = os.getenv('SUPERUSER_NAME', 'admin')
+SUPERUSER_PASSWORD = os.getenv('SUPERUSER_PASSWORD', 'admin')
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+#Security
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'https://localhost').split(',')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

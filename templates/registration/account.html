@@ -2,42 +2,103 @@
 {% block title %}My Account{% endblock %}
 
 {% block content %}
-<div class="auth-wrap">
-  <div class="auth-card">
-    <div class="account-avatar">
-      {{ request.user.username|first|upper }}
-    </div>
-    <div class="account-username">{{ request.user.username }}</div>
-    <div class="account-email">{{ request.user.email|default:'No email set' }}</div>
 
-    <div class="auth-divider"></div>
+<!-- Hero Banner -->
+<div style="background:linear-gradient(135deg,var(--accent),var(--accent-2));">
+  <div class="container py-4">
+    <div class="d-flex align-items-center gap-4 flex-wrap">
 
-    <div class="info-section" style="margin-bottom:0;">
-      {% if request.user.first_name or request.user.last_name %}
-      <div class="info-row">
-        <span class="info-label">Full name</span>
-        <span class="info-value">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+      <!-- Avatar -->
+      <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:32px;font-weight:700;color:#fff;flex-shrink:0;">
+        {{ request.user.username|first|upper }}
       </div>
-      {% endif %}
-      <div class="info-row">
-        <span class="info-label">Member since</span>
-        <span class="info-value">{{ request.user.date_joined|date:"M Y" }}</span>
-      </div>
-      <div class="info-row" style="border-bottom:none;">
-        <span class="info-label">Last login</span>
-        <span class="info-value">{{ request.user.last_login|date:"M d, Y" }}</span>
-      </div>
-    </div>
 
-    <div class="auth-divider"></div>
+      <!-- Name & email -->
+      <div class="flex-grow-1">
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:#fff;">{{ request.user.username }}</div>
+        <div style="color:rgba(255,255,255,0.75);font-size:14px;">{{ request.user.email|default:'No email set' }}</div>
+      </div>
 
-    <div class="account-actions">
-      <a class="btn btn-secondary" href="{% url 'password_change' %}">Change password</a>
-      <form method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <button class="btn btn-danger" type="submit">Log out</button>
-      </form>
+      <!-- Actions -->
+      <div class="d-flex gap-2">
+        <a href="{% url 'password_change' %}" class="btn btn-light btn-sm fw-semibold">Change Password</a>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm fw-semibold" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.4);">Log out</button>
+        </form>
+      </div>
+
     </div>
   </div>
+</div>
+
+<div class="container py-5">
+
+  <!-- Stats Row -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-4">
+      <div class="bg-white border rounded-4 p-4 text-center shadow-sm">
+        <div style="font-family:var(--font-display);font-size:36px;font-weight:700;color:var(--accent);">{{ favorites|length }}</div>
+        <div class="text-muted small mt-1">Favourite Cards</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="bg-white border rounded-4 p-4 text-center shadow-sm">
+        <div style="font-family:var(--font-display);font-size:36px;font-weight:700;color:var(--accent);">{{ request.user.date_joined|date:"Y" }}</div>
+        <div class="text-muted small mt-1">Member Since</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="bg-white border rounded-4 p-4 text-center shadow-sm">
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--accent);">{{ request.user.last_login|date:"M d, Y" }}</div>
+        <div class="text-muted small mt-1">Last Login</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Favourites Section -->
+  <div class="d-flex align-items-baseline gap-3 mb-4">
+    <h2 style="font-family:var(--font-display);" class="fs-4 fw-bold mb-0">⭐ Favourite Cards</h2>
+    {% if favorites %}
+    <span class="small text-muted">{{ favorites|length }} card{{ favorites|length|pluralize }}</span>
+    {% endif %}
+  </div>
+
+  {% if favorites %}
+  <div class="card-grid">
+    {% for fav in favorites %}
+    <a href="{{ fav.card.get_absolute_url }}" class="pokemon-card">
+      <div class="card-img">
+        {% if fav.card.image_small %}
+        <img src="{{ fav.card.image_small }}" alt="{{ fav.card.name }}" loading="lazy">
+        {% else %}
+        <div class="card-img-placeholder">🎴</div>
+        {% endif %}
+      </div>
+      <div class="card-info">
+        <div class="card-types">
+          {% for t in fav.card.types.all %}
+          <span class="type-badge" style="background:{{ t.color }}18;color:{{ t.color }};border:1px solid {{ t.color }}35;">{{ t.name }}</span>
+          {% endfor %}
+        </div>
+        <div class="card-name">{{ fav.card.name }}</div>
+        <div class="card-meta-row">
+          <span class="card-hp">{% if fav.card.hp %}<strong>{{ fav.card.hp }}</strong> HP{% endif %}</span>
+          {% if fav.card.market_price %}<span class="card-price-tag">${{ fav.card.market_price }}</span>{% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="bg-white border rounded-4 text-center p-5">
+    <div style="font-size:56px;" class="mb-3">🤍</div>
+    <div class="fs-5 fw-semibold mb-2">No favourites yet</div>
+    <div class="small text-muted mb-4">Browse cards and hit ❤️ to save them here.</div>
+    <a href="{% url 'cards:card_list' %}" class="btn btn-primary">Browse Cards</a>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}
